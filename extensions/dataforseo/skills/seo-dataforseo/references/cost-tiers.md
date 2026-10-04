@@ -6,7 +6,7 @@
 |----------|----------|-----------|-------|
 | **SERP** | `serp_*_live_advanced` | $0.002 | Per 100 results |
 | **SERP** | `serp_*_live_regular` | $0.001 | Lightweight |
-| **SERP Images** | `serp_google_images_live_*` | $0.002 | 5x with site:/filetype: operators |
+| **SERP Images** | Google Images SERP (no tool for it on the pinned MCP server 2.8.10) | $0.002 | 5x with site:/filetype: operators |
 | **Keywords** | `kw_data_google_ads_search_volume` | $0.05 | Per batch of keywords |
 | **Keywords** | `kw_data_google_trends_explore` | $0.01 | Per query |
 | **Labs** | `dataforseo_labs_*_keyword_*` | $0.05 | Ideas, suggestions, related |
@@ -39,7 +39,7 @@ Configure with: `"${CLAUDE_PLUGIN_ROOT}/scripts/claude-seo" run dataforseo_costs
 - Batch keywords into single `search_volume` calls instead of individual SERP lookups
 - Use `standard` task queue instead of `live` for non-urgent analysis (60-80% savings)
 - Avoid `site:` and `filetype:` operators in image SERP queries (5x cost multiplier)
-- Cache session results — don't re-fetch the same keyword/domain within a session
+- Cache session results: don't re-fetch the same keyword/domain within a session
 
 ## Approval Flow
 

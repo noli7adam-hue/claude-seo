@@ -32,17 +32,18 @@ GPTBot is OpenAI's *training* crawler, not the ChatGPT Search crawler -- do not 
 its status as evidence about ChatGPT Search citability. Likewise ClaudeBot is
 Anthropic's *training* crawler, not the Claude search crawler -- Claude-SearchBot
 governs Claude search citability (per Anthropic's crawler support article).
-Google-Extended governs Gemini/Vertex training and grounding only, never Google
-Search or AI Overviews inclusion (those follow Googlebot), and Applebot-Extended
+Google-Extended governs Gemini/Vertex training and grounding, plus training of the
+models behind Search gen-AI features, never Google Search or AI Overviews
+inclusion (those follow Googlebot), and Applebot-Extended
 governs Apple Intelligence training only, never Siri/Spotlight/Safari discoverability
 (that follows Applebot). Check and report each bot against the specific capability
 it governs.
-Optional block (training only): CCBot, ClaudeBot, Google-Extended, Applebot-Extended,
+Optional block (training, plus grounding for Google-Extended): CCBot, ClaudeBot, Google-Extended, Applebot-Extended,
 cohere-ai
 
 ## Key Citability Signals
 
-- Optimal passage length: **134-167 words** for AI citation
+- Self-contained answer blocks (about 130-170 words is a third-party heuristic; Google says content need not be chunked for AI)
 - Direct answers in first 40-60 words of each section
 - Question-based H2/H3 headings
 - Specific statistics with source attribution

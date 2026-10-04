@@ -338,6 +338,8 @@ def test_seo_updates_every_entry_has_google_owned_source() -> None:
         "blog.google",
         "status.search.google.com",
         "web.dev",
+        "developer.chrome.com",
+        "static.googleusercontent.com",  # full Search Quality Rater Guidelines PDF
         "services.google.com",
         "support.google.com",
     }
@@ -412,8 +414,19 @@ def test_seo_updates_unverified_entries_call_out_status() -> None:
 def test_seo_updates_filter_by_kind() -> None:
     data = seo_updates._load()
     cores = seo_updates._filter(data["updates"], kinds={"core"})
-    assert all(u["kind"] == "core" for u in cores)
+    assert all(u["kind"] in {"core", "core+spam"} for u in cores)
+    assert any(u["kind"] == "core+spam" for u in cores)
     assert any("December 2025 Core Update" in u["name"] for u in cores)
+
+
+def test_seo_updates_spam_filter_includes_combined_rollouts() -> None:
+    """`--kind spam` used to skip the combined March 2024 core+spam rollout."""
+    data = seo_updates._load()
+    spam = seo_updates._filter(data["updates"], kinds={"spam"})
+    assert all(u["kind"] in {"spam", "core+spam"} for u in spam)
+    assert any(u["kind"] == "core+spam" for u in spam)
+    policy = seo_updates._filter(data["updates"], kinds={"policy"})
+    assert all(u["kind"] == "policy" for u in policy)
 
 
 def test_seo_updates_filter_by_year() -> None:
@@ -432,3 +445,13 @@ def test_seo_updates_cli_accepts_every_known_kind() -> None:
         )
         assert result.returncode == 0, f"--kind {kind} failed: {result.stderr}"
         json.loads(result.stdout)
+
+
+def test_seo_updates_freshness_flags_a_stale_ledger() -> None:
+    from datetime import date
+
+    fresh = seo_updates.freshness("2026-09-10", today=date(2026, 9, 23))
+    assert fresh == {"age_days": 13, "stale": False, "warning": None}
+    stale = seo_updates.freshness("2026-07-01", today=date(2026, 9, 23))
+    assert stale["stale"] and "status.search.google.com" in stale["warning"]
+    assert seo_updates.freshness("not-a-date")["stale"] is True

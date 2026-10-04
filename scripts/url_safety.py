@@ -401,7 +401,7 @@ def normalize_hostname(hostname: str) -> str:
         raise URLSafetyError("Empty hostname")
 
     h = hostname.lower().strip()
-    # Strip a single trailing dot — FQDN form is semantically identical to
+    # Strip a single trailing dot: FQDN form is semantically identical to
     # the bare form for the purposes of resolution and policy.
     if h.endswith(".") and not h.endswith(".."):
         h = h[:-1]
@@ -435,7 +435,7 @@ def validate_url(url: str) -> bool:
         - Normalization itself fails (malformed obfuscated input)
     Returns True for any other well-formed http(s) URL with a
     public-looking hostname. Use ``validate_url_strict`` whenever the
-    caller will open a socket — only the strict form catches a DNS
+    caller will open a socket; only the strict form catches a DNS
     record that resolves to a non-public IP at connect time.
     """
     try:
@@ -458,7 +458,7 @@ def validate_url(url: str) -> bool:
     try:
         ipaddress.ip_address(hostname)
     except ValueError:
-        return True  # Hostname is a name, not a literal — OK at parse time.
+        return True  # Hostname is a name, not a literal: OK at parse time.
     if is_safe_ip(hostname):
         return True
     return allowlisted and _is_allowlistable_ip(hostname)
@@ -657,7 +657,7 @@ def _pin_dns(
     only to ``pinned_ip``, AND every other hostname looked up during the
     pinned scope has its resolved IPs validated against
     :func:`is_safe_ip`. Non-public resolutions raise ``socket.gaierror``,
-    which ``requests`` surfaces as ``ConnectionError`` — the caller's
+    which ``requests`` surfaces as ``ConnectionError``: the caller's
     existing error path.
 
     ``exempt_hosts`` are resolved by the real resolver without the
@@ -781,6 +781,70 @@ DEFAULT_REQUEST_HEADERS = {
 }
 
 
+_CONTENT_TYPE_CHARSET_RE = re.compile(r"charset\s*=\s*['\"]?([^;,'\"\s>]+)", re.IGNORECASE)
+_META_CHARSET_RE = re.compile(
+    r"<meta[^>]+charset\s*=\s*['\"]?([^;,'\"\s/>]+)",
+    re.IGNORECASE,
+)
+_BOMS = (
+    (b"\xef\xbb\xbf", "utf-8-sig"),
+    (b"\xff\xfe", "utf-16-le"),
+    (b"\xfe\xff", "utf-16-be"),
+)
+
+
+def _decode_bytes(raw: bytes, encoding: str) -> str:
+    try:
+        return raw.decode(encoding, errors="replace")
+    except LookupError:
+        return raw.decode("utf-8", errors="replace")
+
+
+def _extract_charset_from_content_type(content_type: str) -> str | None:
+    match = _CONTENT_TYPE_CHARSET_RE.search(content_type or "")
+    return match.group(1).strip() if match else None
+
+
+def _extract_meta_charset(raw: bytes) -> str | None:
+    head = raw[:4096].decode("ascii", errors="ignore")
+    match = _META_CHARSET_RE.search(head)
+    return match.group(1).strip() if match else None
+
+
+def decode_response_text(response) -> str:
+    """Decode a response body deterministically: BOM, then the Content-Type
+    charset, then ``<meta charset>``, then UTF-8.
+
+    Use this instead of ``response.text``. ``requests`` falls back to
+    ISO-8859-1 for text/* responses without a charset, which garbles UTF-8
+    pages (issue #314). Reading ``response.content`` consumes a streamed body,
+    so streamed callers should decode the bytes they already read.
+    """
+    content_type = response.headers.get("Content-Type", "") if response.headers else ""
+    return decode_body(response.content or b"", content_type)
+
+
+def decode_body(raw: bytes, content_type: str = "") -> str:
+    """Decode already-read bytes with the same rules as ``decode_response_text``.
+
+    For streamed responses, whose ``.content`` must not be read again.
+    """
+    raw = raw or b""
+    for marker, encoding in _BOMS:
+        if raw.startswith(marker):
+            return _decode_bytes(raw[len(marker):], encoding.replace("-sig", ""))
+
+    charset = _extract_charset_from_content_type(content_type)
+    if charset:
+        return _decode_bytes(raw, charset)
+
+    charset = _extract_meta_charset(raw)
+    if charset:
+        return _decode_bytes(raw, charset)
+
+    return raw.decode("utf-8", errors="replace")
+
+
 def _with_default_headers(kwargs: dict) -> dict:
     """Fill in DEFAULT_REQUEST_HEADERS for header keys the caller did not set."""
     headers = dict(DEFAULT_REQUEST_HEADERS)
@@ -891,7 +955,7 @@ def make_safe_playwright_route_handler(
 
             parsed = urlparse(request.url)
             if parsed.scheme not in ("http", "https"):
-                # data:, blob:, chrome-extension:, etc. — no DNS involved.
+                # data:, blob:, chrome-extension:, etc.: no DNS involved.
                 route.continue_()
                 return
             host = parsed.hostname
