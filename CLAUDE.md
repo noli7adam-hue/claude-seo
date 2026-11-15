@@ -22,7 +22,7 @@ claude-seo/
   CONTRIBUTORS.md                    # Community credits (Pro Hub Challenge)
   AGENTS.md                          # Multi-platform agent instructions (Cursor, Antigravity)
   .claude-plugin/
-    plugin.json                    # Plugin manifest (v2.5.0)
+    plugin.json                    # Plugin manifest (v2.6.1)
     marketplace.json               # Marketplace catalog for distribution
   skills/                            # 26 sub-skills (auto-discovered)
     seo/                           # Main orchestrator skill
@@ -90,8 +90,9 @@ claude-seo/
     seo-flow.md                  # FLOW framework integration
   hooks/                           # Quality gate hooks
     hooks.json                   # PostToolUse schema validation
-  scripts/                         # 60 Python execution scripts
+  scripts/                         # 64 Python execution scripts
     google_auth.py               # Credential management (OAuth, SA, API key, 4-tier detection)
+    google_properties.py         # Picks the GSC/GA4 property for the audited domain, fails closed on a mismatch
     backlinks_auth.py            # Backlink API credential management (Moz, Bing)
     moz_api.py                   # Moz Link Explorer API (DA/PA, spam, domains, anchors)
     bing_webmaster.py            # Bing Webmaster Tools API (registered-site links/comparison)
@@ -112,6 +113,8 @@ claude-seo/
     keyword_planner.py           # Google Ads Keyword Planner
     fetch_page.py                # Page fetcher with UA rotation
     parse_html.py                # HTML parser for SEO elements
+    page_checks.py               # Deterministic single-page on-page checker (47 checks, JSON findings)
+    transport_check.py           # TLS certificate, security header and HTTPS redirect checker
     capture_screenshot.py        # Playwright screenshots
     analyze_visual.py            # Visual analysis helper
     drift_baseline.py            # SEO drift baseline capture (SQLite)
@@ -123,6 +126,7 @@ claude-seo/
     dataforseo_normalize.py      # DataForSEO response normalization utility
     sync_flow.py                 # FLOW prompt library sync (GitHub API, CC BY 4.0 headers, --dry-run, --ref)
     url_safety.py                # Canonical URL/SSRF safety module (validate, DNS-pin, safe fetch)
+    browser_proxy.py             # Local egress guard for the headless browser: validates and pins every Chromium connection
     render_page.py               # Shared headless renderer (SPA-aware, Playwright)
     lcp_subparts.py              # LCP subparts breakdown via CrUX API
     preload_check.py             # Speculation Rules / bfcache / prerender / preload detector
@@ -143,7 +147,7 @@ claude-seo/
     seo_updates.py               # Primary-source Google updates query tool
     indexnow_submit.py           # IndexNow submitter
     ucp_check.py                 # UCP (Universal Commerce Protocol) profile auditor
-    unlighthouse_run.py          # Unlighthouse CLI wrapper (site-wide Lighthouse)
+    unlighthouse_run.py          # Unlighthouse CLI wrapper (site-wide Lighthouse, runs behind the egress guard via unlighthouse_http_proxy.cjs)
     validate_backlink_report.py  # Backlink report validation
     portability_check.py         # Cross-platform portability lint for SKILL.md files
     consistency_check.py         # Reference-graph gate: dead refs, routing, lock, orphans
